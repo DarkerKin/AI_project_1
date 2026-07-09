@@ -1,5 +1,9 @@
 tensorflow
+tensorboard
 jupyterlab
 numpy
 pandas
 matplotlib
+yfinance
+scikit-learn
+torch

@@ -25,6 +25,7 @@ import yfinance as yf
 import tensorflow as tf
 from tensorflow.keras import layers, Model
 from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import HistGradientBoostingRegressor
 
 
 # ---------------------------------------------------------------------------
@@ -51,6 +52,9 @@ class StockDataFetcher:
         "MO", "DUK", "BDX", "ITW", "CME", "SHW", "FI", "EOG", "NOC", "AON",
     ]
 
+    # Broad-market proxy used to compute each stock's market-relative return feature.
+    MARKET_TICKER = "SPY"
+
     def __init__(self, tickers: list[str] | None = None, start: str = "2018-01-01", end: str | None = None):
         self.tickers = tickers or self.TOP_100_TICKERS
         self.start = start
@@ -70,6 +74,12 @@ class StockDataFetcher:
                 print(f"[skip] {ticker}: fetch failed ({e})")
         return raw_data
 
+    def fetch_market_return(self) -> pd.Series:
+        """Fetches SPY close price and returns its daily pct-change series (the market's own return),
+        used as a market-relative feature so the model can see broad market moves, not just each stock in isolation."""
+        df = yf.Ticker(self.MARKET_TICKER).history(start=self.start, end=self.end, auto_adjust=True)
+        return df["Close"].pct_change()
+
     @staticmethod
     def _compute_rsi(close: pd.Series, period: int = 14) -> pd.Series:
         delta = close.diff()
@@ -88,8 +98,12 @@ class StockDataFetcher:
         signal_line = macd_line.ewm(span=signal, adjust=False).mean()
         return macd_line - signal_line  # MACD histogram
 
-    def engineer_features(self, raw_data: dict[str, pd.DataFrame]) -> dict[str, pd.DataFrame]:
-        """Builds ['return', 'rsi', 'macd', 'volatility'] columns per ticker (unscaled)."""
+    def engineer_features(
+        self, raw_data: dict[str, pd.DataFrame], market_return: pd.Series
+    ) -> dict[str, pd.DataFrame]:
+        """Builds ['return', 'rsi', 'macd', 'volatility', 'market_return'] columns per ticker (unscaled).
+        'market_return' is SPY's same-day return, aligned by date, giving the model visibility into
+        whether the broad market was up or down that day (not just this one stock in isolation)."""
         feature_data = {}
         for ticker, df in raw_data.items():
             close = df["Close"]
@@ -99,6 +113,7 @@ class StockDataFetcher:
             out["rsi"] = self._compute_rsi(close)
             out["macd"] = self._compute_macd(close)
             out["volatility"] = out["return"].rolling(20).std()
+            out["market_return"] = market_return.reindex(out.index)
 
             out = out.dropna()
             if len(out) < 90:  # need room for a 60-day window + a few targets
@@ -210,9 +225,10 @@ def main():
     print(f"Fetching data for {len(fetcher.tickers)} tickers...")
     raw_data = fetcher.fetch_raw()
     print(f"Successfully fetched {len(raw_data)} tickers.")
+    market_return = fetcher.fetch_market_return()
 
-    # --- Step 2: engineer features (return, rsi, macd, volatility) ---
-    feature_data = fetcher.engineer_features(raw_data)
+    # --- Step 2: engineer features (return, rsi, macd, volatility, market_return) ---
+    feature_data = fetcher.engineer_features(raw_data, market_return)
     print(f"{len(feature_data)} tickers have enough data after feature engineering.")
 
     # --- Step 3: chronological split (per stock, BEFORE scaling/pooling) ---
@@ -240,7 +256,13 @@ def main():
         hidden_size1=48,
         hidden_size2=24,
     )
-    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4), loss="mse", metrics=["mae"])
+    # Huber loss: quadratic for small errors, linear for large ones — less dominated by
+    # outlier return days (earnings surprises, etc.) than plain MSE.
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
+        loss=tf.keras.losses.Huber(),
+        metrics=["mae", "mse"],
+    )
     model.summary()
 
     early_stop = tf.keras.callbacks.EarlyStopping(monitor="val_loss", patience=4, restore_best_weights=True)
@@ -253,6 +275,40 @@ def main():
         batch_size=BATCH_SIZE,
         callbacks=[early_stop, tensorboard_cb],
     )
+
+    # --- Step 6.5: full validation-set evaluation — directional accuracy + baselines ---
+    # Raw loss numbers are meaningless in isolation. These comparisons answer the real
+    # question: is this model actually better than doing nothing (predicting zero),
+    # doing the simplest possible thing (assuming tomorrow repeats today's direction),
+    # or a much simpler non-sequence model (gradient boosting on that day's features alone)?
+    val_preds = model.predict([X_val, id_val], verbose=0).flatten()
+
+    model_mse = float(np.mean((val_preds - y_val) ** 2))
+    model_dir_acc = float(np.mean(np.sign(val_preds) == np.sign(y_val)))
+
+    # Baseline A: always predict zero return (no model at all).
+    zero_mse = float(np.mean(y_val ** 2))
+
+    # Baseline B: "persistence" — assume tomorrow's return has the same sign as today's
+    # (the last day in the input window). The cheapest possible non-trivial baseline.
+    last_day_return = X_val[:, -1, 0]  # 'return' is feature column 0
+    persistence_dir_acc = float(np.mean(np.sign(last_day_return) == np.sign(y_val)))
+
+    # Baseline C: gradient-boosted trees on the SAME final day's feature vector — no
+    # 60-day window, no learned stock embedding. Tells us whether the LSTM's extra
+    # architectural complexity is earning its keep over a much simpler tabular model.
+    gbm = HistGradientBoostingRegressor(random_state=0)
+    gbm.fit(X_train[:, -1, :], y_train)
+    gbm_preds = gbm.predict(X_val[:, -1, :])
+    gbm_mse = float(np.mean((gbm_preds - y_val) ** 2))
+    gbm_dir_acc = float(np.mean(np.sign(gbm_preds) == np.sign(y_val)))
+
+    print("\n--- Validation evaluation (full val set, scaled 'return' space) ---")
+    print(f"{'Model':<30}{'MSE':>10}{'Directional Acc':>20}")
+    print(f"{'Pooled LSTM':<30}{model_mse:>10.4f}{model_dir_acc:>19.2%}")
+    print(f"{'Baseline: predict 0':<30}{zero_mse:>10.4f}{'n/a':>20}")
+    print(f"{'Baseline: persistence':<30}{'n/a':>10}{persistence_dir_acc:>19.2%}")
+    print(f"{'Baseline: GBM (no sequence)':<30}{gbm_mse:>10.4f}{gbm_dir_acc:>19.2%}")
 
     # --- Step 7: get predictions (next-day return) for each stock's latest window ---
     print("\nPredicted next-day returns (scaled space, sample of stocks):")
