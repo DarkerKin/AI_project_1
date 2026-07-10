@@ -7,3 +7,4 @@ matplotlib
 yfinance
 scikit-learn
 torch
+pydot
