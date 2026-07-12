@@ -79,6 +79,10 @@
     <div class="container">
         <div class="column up">
             <h2>&#9650; Predicted UP  ({{ up_stocks|length }})</h2>
+            <div style="display:flex;justify-content:space-between;font-size:0.75rem;color:#999;padding:4px 0 8px;border-bottom:1px solid #eee;">
+                <span>Ticker</span>
+                <span>Predicted Return</span>
+            </div>
             {% if up_stocks %}
                 {% for stock in up_stocks %}
                 <div class="stock-row">
@@ -92,6 +96,10 @@
         </div>
         <div class="column down">
             <h2>&#9660; Predicted DOWN  ({{ down_stocks|length }})</h2>
+            <div style="display:flex;justify-content:space-between;font-size:0.75rem;color:#999;padding:4px 0 8px;border-bottom:1px solid #eee;">
+                <span>Ticker</span>
+                <span>Predicted Return</span>
+            </div>
             {% if down_stocks %}
                 {% for stock in down_stocks %}
                 <div class="stock-row">
