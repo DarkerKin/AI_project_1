@@ -143,11 +143,14 @@ Two tickers are skipped automatically during data fetching (handled gracefully i
 ---
 
 ## Setup
-This project requires **Python 3.9–3.12** (TensorFlow does not yet support 3.13+).
+This project requires **Python 3.9–3.12** (TensorFlow does not yet support 3.13+), plus Graphviz for the model architecture diagram (`plot_model` needs the actual Graphviz binary, not just the `pydot` Python package).
 
 ```bash
 # Install Python 3.12 if needed
 brew install python@3.12
+
+# Install Graphviz (required for tf.keras.utils.plot_model)
+brew install graphviz
 
 # Create and activate a virtual environment
 /opt/homebrew/bin/python3.12 -m venv .venv312
@@ -170,7 +173,7 @@ python main.py
 python model_pytorch.py
 ```
 
-Each run fetches ~100 tickers, engineers features, builds a leakage-free chronological train/validation split, trains with early stopping, then prints a full evaluation against baseline models plus sample next-day predictions.
+Each run fetches ~100 tickers, engineers features, builds a leakage-free chronological train/validation split, trains with early stopping, then prints a full evaluation against baseline models plus sample next-day predictions. `main.py` also writes `model_architecture.png` — a diagram of the model's layers and shapes, generated directly from the model object via `tf.keras.utils.plot_model`.
 
 ---
 

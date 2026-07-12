@@ -264,6 +264,9 @@ def main():
         metrics=["mae", "mse"],
     )
     model.summary()
+    tf.keras.utils.plot_model(
+        model, to_file="model_architecture.png", show_shapes=True, show_layer_names=True
+    )
 
     early_stop = tf.keras.callbacks.EarlyStopping(monitor="val_loss", patience=4, restore_best_weights=True)
     tensorboard_cb = tf.keras.callbacks.TensorBoard(log_dir="logs/pooled_lstm", histogram_freq=1)
