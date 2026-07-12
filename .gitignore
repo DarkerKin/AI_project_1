@@ -2,3 +2,4 @@
 .venv312
 logs
 __pycache__
+saved_model/

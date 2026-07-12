@@ -39,17 +39,19 @@ class StockDataFetcher:
 
     # Top ~100 large-cap US tickers (S&P 100 style list). Swap this out for
     # a dynamically-fetched list if you want it to stay current.
+    # Actual S&P 100 constituents (OEX) as of September 2025
     TOP_100_TICKERS = [
-        "AAPL", "MSFT", "GOOGL", "GOOG", "AMZN", "NVDA", "META", "TSLA", "BRK-B", "AVGO",
-        "JPM", "LLY", "V", "XOM", "UNH", "MA", "COST", "HD", "PG", "JNJ",
-        "NFLX", "BAC", "ABBV", "CRM", "KO", "MRK", "AMD", "CVX", "PEP", "TMO",
-        "WMT", "ADBE", "LIN", "MCD", "CSCO", "ABT", "ACN", "ORCL", "DHR", "WFC",
-        "TXN", "PM", "GE", "NEE", "IBM", "CAT", "AMGN", "UNP", "INTU", "NOW",
-        "AXP", "SPGI", "RTX", "LOW", "COP", "BA", "PFE", "HON", "ISRG", "SYK",
-        "GS", "BKNG", "T", "MS", "DE", "BLK", "ELV", "SCHW", "LMT", "MDT",
-        "GILD", "ADP", "TJX", "VRTX", "MMC", "PLD", "CB", "SBUX", "AMT", "REGN",
-        "C", "ADI", "MU", "PANW", "ETN", "BSX", "ZTS", "SO", "APD", "CI",
-        "MO", "DUK", "BDX", "ITW", "CME", "SHW", "FI", "EOG", "NOC", "AON",
+        "AAPL", "ABBV", "ABT", "ACN", "ADBE", "AMAT", "AMD", "AMGN", "AMT", "AMZN",
+        "AVGO", "AXP", "BA", "BAC", "BKNG", "BLK", "BMY", "BNY", "BRK-B", "C",
+        "CAT", "CL", "CMCSA", "COF", "COP", "COST", "CRM", "CSCO", "CVS", "CVX",
+        "DE", "DHR", "DIS", "DUK", "EMR", "FDX", "GD", "GE", "GEV", "GILD",
+        "GM", "GOOG", "GOOGL", "GS", "HD", "HONA", "IBM", "INTC", "INTU", "ISRG",
+        "JNJ", "JPM", "KO", "LIN", "LLY", "LMT", "LOW", "LRCX", "MA", "MCD",
+        "MDLZ", "MDT", "META", "MMM", "MO", "MRK", "MS", "MSFT", "MU", "NEE",
+        "NFLX", "NKE", "NOW", "NVDA", "ORCL", "PEP", "PFE", "PG", "PLTR", "PM",
+        "QCOM", "RTX", "SBUX", "SCHW", "SO", "SPG", "T", "TMO", "TMUS", "TSLA",
+        "TXN", "UBER", "UNH", "UNP", "UPS", "USB", "V", "VZ", "WFC", "WMT",
+        "XOM",
     ]
 
     # Broad-market proxy used to compute each stock's market-relative return feature.
