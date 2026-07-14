@@ -75,10 +75,10 @@ architecture to training is a natural pivot point.
 
 ## Slide 6 — Results
 **Text:**
-- Directional accuracy (correct up/down calls): **~50–51%** — statistically no better than a coin flip
+- Directional accuracy (correct up/down calls): **50.12%** — statistically no better than a coin flip
 - Benchmarked against 3 baselines: predict-zero, persistence (repeat yesterday), gradient-boosted trees — all land in the same ~49–51% range
 
-**Image:** `prediction_vs_actual.png`
+**Images:** `prediction_vs_actual.png` (primary) + `results_table.png` (exact numbers, second image on this slide)
 
 **Speaker (2) — this is the key talking point of the whole presentation, give it room, say it explicitly:**
 *"Predictions cluster in a flat band near zero regardless of what actually happened — and that's the mathematically correct behavior when there's very little reliable signal to act on. If we'd instead seen these dots hug the diagonal 'perfect prediction' line, that would be the red flag, not this — reliably predicting daily stock direction from price data alone essentially doesn't happen legitimately. A result that clean would point to a data leak, not a working model. What we're seeing here is the honest, expected outcome for one of the hardest prediction problems in finance."*

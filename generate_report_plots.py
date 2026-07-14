@@ -25,6 +25,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+from sklearn.ensemble import HistGradientBoostingRegressor
 
 from main import StockDataFetcher, build_pooled_dataset
 
@@ -87,22 +88,31 @@ def load_saved_artifacts():
     return model, scaler, stock_to_idx
 
 
-def build_validation_set(stock_to_idx: dict[str, int], scaler):
+def build_datasets(stock_to_idx: dict[str, int], scaler):
+    """Rebuilds both train and validation sequences using the saved model's own
+    scaler (not a freshly fit one). Train sequences are only needed to fit the
+    GBM baseline for the results table — the LSTM itself is not retrained."""
     fetcher = StockDataFetcher(start="2018-01-01")
     print(f"Fetching data for {len(fetcher.tickers)} tickers...")
     raw_data = fetcher.fetch_raw()
     market_return = fetcher.fetch_market_return()
     feature_data = fetcher.engineer_features(raw_data, market_return)
-    _, val_data = fetcher.chronological_split(feature_data, train_frac=0.8)
+    train_data, val_data = fetcher.chronological_split(feature_data, train_frac=0.8)
 
-    # Use the SAME scaler the saved model was trained with (not a freshly fit
-    # one) so this evaluation stays consistent with how the model actually learned.
-    scaled_val = {
-        t: pd.DataFrame(scaler.transform(df.values), columns=df.columns, index=df.index)
-        for t, df in val_data.items()
-    }
+    def _scale(data):
+        return {
+            t: pd.DataFrame(scaler.transform(df.values), columns=df.columns, index=df.index)
+            for t, df in data.items()
+        }
 
-    return build_pooled_dataset(scaled_val, stock_to_idx, window=WINDOW, horizon=HORIZON, return_dates=True)
+    scaled_train = _scale(train_data)
+    scaled_val = _scale(val_data)
+
+    X_train, _, y_train = build_pooled_dataset(scaled_train, stock_to_idx, window=WINDOW, horizon=HORIZON)
+    X_val, id_val, y_val, dates_val = build_pooled_dataset(
+        scaled_val, stock_to_idx, window=WINDOW, horizon=HORIZON, return_dates=True
+    )
+    return X_train, y_train, X_val, id_val, y_val, dates_val
 
 
 def plot_prediction_vs_actual(model, X_val, id_val, y_val) -> np.ndarray:
@@ -149,6 +159,49 @@ def plot_large_errors(preds, y_val, id_val, dates_val, idx_to_stock: dict[int, s
     plt.savefig("large_errors.png", dpi=150)
     plt.close()
     print("Saved large_errors.png")
+
+
+def plot_results_table(preds, X_train, y_train, X_val, y_val):
+    """Model vs. baselines: MSE + directional accuracy, computed live against
+    the actual saved model (not copied from a separate main.py run) so every
+    number here is consistent with prediction_vs_actual.png and large_errors.png."""
+    model_mse = float(np.mean((preds - y_val) ** 2))
+    model_dir_acc = float(np.mean(np.sign(preds) == np.sign(y_val)))
+
+    zero_mse = float(np.mean(y_val ** 2))
+
+    last_day_return = X_val[:, -1, 0]
+    persistence_dir_acc = float(np.mean(np.sign(last_day_return) == np.sign(y_val)))
+
+    gbm = HistGradientBoostingRegressor(random_state=0)
+    gbm.fit(X_train[:, -1, :], y_train)
+    gbm_preds = gbm.predict(X_val[:, -1, :])
+    gbm_mse = float(np.mean((gbm_preds - y_val) ** 2))
+    gbm_dir_acc = float(np.mean(np.sign(gbm_preds) == np.sign(y_val)))
+
+    rows = [
+        ["Pooled LSTM", f"{model_mse:.4f}", f"{model_dir_acc:.2%}"],
+        ["Baseline: predict 0", f"{zero_mse:.4f}", "n/a"],
+        ["Baseline: persistence", "n/a", f"{persistence_dir_acc:.2%}"],
+        ["Baseline: GBM (no sequence)", f"{gbm_mse:.4f}", f"{gbm_dir_acc:.2%}"],
+    ]
+
+    fig, ax = plt.subplots(figsize=(7, 0.4 * len(rows) + 1))
+    ax.axis("off")
+    table = ax.table(
+        cellText=rows,
+        colLabels=["Model", "MSE (scaled)", "Directional Accuracy"],
+        loc="center",
+        cellLoc="center",
+    )
+    table.auto_set_font_size(False)
+    table.set_fontsize(10)
+    table.scale(1, 1.8)
+    plt.title("Model vs. Baselines (Validation Set)", pad=20)
+    plt.tight_layout()
+    plt.savefig("results_table.png", dpi=150)
+    plt.close()
+    print("Saved results_table.png")
 
 
 # ---------------------------------------------------------------------------
@@ -240,28 +293,31 @@ def plot_capacity_ablation():
 def main():
     print("=== Generating presentation visuals from existing artifacts ===\n")
 
-    print("[1/5] Training curves (from existing TensorBoard logs)...")
+    print("[1/6] Training curves (from existing TensorBoard logs)...")
     plot_training_curves()
 
-    print("\n[2/5] Loading saved model + fetching fresh validation data...")
+    print("\n[2/6] Loading saved model + fetching fresh train/validation data...")
     model, scaler, stock_to_idx = load_saved_artifacts()
     idx_to_stock = {v: k for k, v in stock_to_idx.items()}
-    X_val, id_val, y_val, dates_val = build_validation_set(stock_to_idx, scaler)
-    print(f"Validation sequences: {X_val.shape}")
+    X_train, y_train, X_val, id_val, y_val, dates_val = build_datasets(stock_to_idx, scaler)
+    print(f"Train sequences: {X_train.shape}, Validation sequences: {X_val.shape}")
 
-    print("\n[3/5] Prediction-vs-actual plot + large-error table...")
+    print("\n[3/6] Prediction-vs-actual plot + large-error table...")
     preds = plot_prediction_vs_actual(model, X_val, id_val, y_val)
     plot_large_errors(preds, y_val, id_val, dates_val, idx_to_stock)
 
-    print("\n[4/5] System diagram...")
+    print("\n[4/6] Results table (model vs. baselines)...")
+    plot_results_table(preds, X_train, y_train, X_val, y_val)
+
+    print("\n[5/6] System diagram...")
     plot_system_diagram()
 
-    print("\n[5/5] Capacity ablation bar chart...")
+    print("\n[6/6] Capacity ablation bar chart...")
     plot_capacity_ablation()
 
     print(
         "\nDone. Generated: training_curves.png, prediction_vs_actual.png, large_errors.png, "
-        "system_diagram.png, capacity_ablation.png"
+        "results_table.png, system_diagram.png, capacity_ablation.png"
     )
 
 
