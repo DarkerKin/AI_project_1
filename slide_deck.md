@@ -3,7 +3,11 @@
 Source document for Gamma (or manual slide building). 10 slides max (Gamma free tier).
 Each slide lists: the text/bullets to generate, which real PNG to manually place
 (do not let Gamma generate an AI image for these — insert the actual file), and
-speaker notes for the live talk (5-7 minutes total, every team member speaks).
+speaker notes for the live talk (5-7 minutes total, 2 presenters).
+
+**Suggested split:** Presenter 1 covers Slides 1-5 (setup → architecture),
+Presenter 2 covers Slides 6-10 (training → results → close). The handoff from
+architecture to training is a natural pivot point.
 
 ---
 
@@ -15,7 +19,7 @@ speaker notes for the live talk (5-7 minutes total, every team member speaks).
 
 **Image:** None
 
-**Speaker notes:** Quick intro — who's presenting, one sentence on what the project is (predicting next-day stock returns for ~100 companies with one shared model).
+**Speaker (1):** Quick intro — who's presenting, one sentence on what the project is (predicting next-day stock returns for ~100 companies with one shared model).
 
 ---
 
@@ -27,37 +31,24 @@ speaker notes for the live talk (5-7 minutes total, every team member speaks).
 
 **Image:** None
 
-**Speaker notes:** Be upfront here that this is a research/engineering exercise in the ML workflow, not a claim that the output is a profitable trading signal — sets expectations honestly before results are shown later.
+**Speaker (1):** Be upfront here that this is a research/engineering exercise in the ML workflow, not a claim that the output is a profitable trading signal — sets expectations honestly before results are shown later.
 
 ---
 
-## Slide 3 — Dataset Overview
+## Slide 3 — Dataset & Preprocessing
 **Text:**
-- Source: Yahoo Finance (via `yfinance`), 2018–present
-- ~100 large-cap US tickers (S&P 100-style universe) + SPY as a market benchmark
-- 98 of 100 tickers returned usable data (2 skipped automatically — delisted/API gaps)
+- Source: Yahoo Finance (via `yfinance`), 2018–present — ~100 large-cap US tickers + SPY as market benchmark
+- 98 of 100 tickers returned usable data (2 skipped automatically, handled gracefully in code)
 - ~160K training sequences, ~36K validation sequences (60-day sliding windows)
-
-**Image:** None (optional: simple stat callout, no chart needed)
-
-**Speaker notes:** Mention the two skipped tickers (MMC, FI) are handled gracefully in code, not manual cleanup — shows the pipeline is robust to real-world API messiness.
-
----
-
-## Slide 4 — Preprocessing
-**Text:**
-- Feature engineering: daily return, RSI, MACD, 20-day volatility, market-relative return (SPY)
-- Chronological (not random) 80/20 train/validation split — per stock, by date
-- Feature scaling (`StandardScaler`) fit ONLY on training data, applied to both splits
-- Both choices exist specifically to prevent lookahead bias / data leakage in financial time series
+- Chronological (not random) 80/20 train/validation split — scaler fit ONLY on training data — both choices prevent lookahead bias in financial time series
 
 **Image:** None
 
-**Speaker notes:** This is worth emphasizing even though it's not visually exciting — a random split or scaler fit on all data would silently leak future information into training, a common mistake in financial ML. Getting this right is a core part of the methodology.
+**Speaker (1):** Emphasize the chronological split and train-only scaling even though it's not visually exciting — a random split or scaler fit on all data would silently leak future information into training, a common mistake in financial ML.
 
 ---
 
-## Slide 5 — Model Architecture
+## Slide 4 — Model Architecture
 **Text:**
 - Learned stock embedding (dim 8) — lets all stocks share one model while preserving stock-specific identity
 - Two stacked LSTM layers (48 → 24 units) over 60-day windows
@@ -66,19 +57,30 @@ speaker notes for the live talk (5-7 minutes total, every team member speaks).
 
 **Image:** `model_architecture.png`
 
-**Speaker notes:** Explain the embedding idea simply: instead of one-hot encoding which stock this is, the model learns a compact numeric "fingerprint" per stock during training.
+**Speaker (1):** Explain the embedding idea simply: instead of one-hot encoding which stock this is, the model learns a compact numeric "fingerprint" per stock during training. Hand off to Presenter 2 here.
 
 ---
 
-## Slide 6 — Training & Results
+## Slide 5 — Training
 **Text:**
-- Trained with `EarlyStopping` (patience=4, restores best weights) — training halts automatically once validation loss stops improving
+- `EarlyStopping` (patience=4, restores best weights) — halts automatically once validation loss stops improving
+- Train loss keeps dropping while validation loss stays flat — the two curves never converge
+- This is early evidence the model finds whatever weak signal exists almost immediately, then starts fitting noise
+
+**Image:** `training_curves.png`
+
+**Speaker (2):** Point directly at the gap between the two lines — this single chart previews the "signal ceiling" story that the rest of the talk builds on.
+
+---
+
+## Slide 6 — Results
+**Text:**
 - Directional accuracy (correct up/down calls): **~50–51%** — statistically no better than a coin flip
 - Benchmarked against 3 baselines: predict-zero, persistence (repeat yesterday), gradient-boosted trees — all land in the same ~49–51% range
 
-**Images:** `training_curves.png` (top/left) + `prediction_vs_actual.png` (bottom/right)
+**Image:** `prediction_vs_actual.png`
 
-**Speaker notes — this is the key talking point of the whole presentation, say it explicitly:**
+**Speaker (2) — this is the key talking point of the whole presentation, give it room, say it explicitly:**
 *"Predictions cluster in a flat band near zero regardless of what actually happened — and that's the mathematically correct behavior when there's very little reliable signal to act on. If we'd instead seen these dots hug the diagonal 'perfect prediction' line, that would be the red flag, not this — reliably predicting daily stock direction from price data alone essentially doesn't happen legitimately. A result that clean would point to a data leak, not a working model. What we're seeing here is the honest, expected outcome for one of the hardest prediction problems in finance."*
 
 ---
@@ -86,12 +88,12 @@ speaker notes for the live talk (5-7 minutes total, every team member speaks).
 ## Slide 7 — Error Analysis
 **Text:**
 - Table: the 15 largest prediction misses on the validation set (ticker, date, predicted vs. actual)
-- Pattern: worst misses cluster around large real-world moves the model had no way to anticipate (e.g., earnings surprises)
+- Worst misses cluster around large real-world moves the model had no way to anticipate (e.g., earnings surprises)
 - Confirms the model isn't "broken" on specific stocks — it's structurally blind to event-driven moves, since it only sees price/volume history
 
 **Image:** `large_errors.png`
 
-**Speaker notes:** Pick 1-2 rows to narrate live, e.g. "ORCL on 2025-09-10 — model predicted almost no change, actual return was enormous, almost certainly a specific news event the model has no visibility into."
+**Speaker (2):** Pick 1-2 rows to narrate live, e.g. "ORCL on 2025-09-10 — model predicted almost no change, actual return was enormous, almost certainly a specific news event the model has no visibility into."
 
 ---
 
@@ -103,7 +105,7 @@ speaker notes for the live talk (5-7 minutes total, every team member speaks).
 
 **Image:** `capacity_ablation.png`
 
-**Speaker notes:** *"This confirms the ceiling belongs to the data's limited signal content, not our architecture. A 25x larger model should have clearly outperformed a 25x smaller one if capacity were the bottleneck — it didn't."* This is your strongest evidence-backed moment — say it plainly, don't hedge.
+**Speaker (2):** *"This confirms the ceiling belongs to the data's limited signal content, not our architecture. A 25x larger model should have clearly outperformed a 25x smaller one if capacity were the bottleneck — it didn't."* This is your strongest evidence-backed moment — say it plainly, don't hedge.
 
 ---
 
@@ -115,15 +117,15 @@ speaker notes for the live talk (5-7 minutes total, every team member speaks).
 
 **Image:** `system_diagram.png`
 
-**Speaker notes:** Use the diagram to pivot from "the model's accuracy is limited" to "and yet we still built and deployed a complete, working system end-to-end" — sets up the live demo.
+**Speaker (2):** Use the diagram to pivot from "the model's accuracy is limited" to "and yet we still built and deployed a complete, working system end-to-end" — sets up the live demo.
 
 ---
 
 ## Slide 10 — Questions / Live Demo
 **Text:**
 - Thank you — happy to answer questions
-- [Optional: switch to live browser demo of the Flask app here]
+- [Switch to live browser demo of the Flask app here]
 
 **Image:** None (live demo covers this instead of a screenshot)
 
-**Speaker notes:** This is where you open the actual running web app in a browser and show real predictions — no need for a static image since you're demonstrating it live.
+**Speaker (1 or 2):** Open the actual running web app in a browser and show real predictions — no need for a static image since you're demonstrating it live.
