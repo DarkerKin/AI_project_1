@@ -158,8 +158,8 @@ class StockDataFetcher:
 # 2. Sliding-window dataset builder (pools all stocks together)
 # ---------------------------------------------------------------------------
 def build_pooled_dataset(stock_data: dict[str, pd.DataFrame], stock_to_idx: dict[str, int],
-                          window: int = 60, horizon: int = 1):
-    X_list, id_list, y_list = [], [], []
+                          window: int = 60, horizon: int = 1, return_dates: bool = False):
+    X_list, id_list, y_list, date_list = [], [], [], []
 
     for ticker, df in stock_data.items():
         if ticker not in stock_to_idx:
@@ -169,9 +169,12 @@ def build_pooled_dataset(stock_data: dict[str, pd.DataFrame], stock_to_idx: dict
 
         max_start = len(arr) - window - horizon
         for start in range(max_start):
+            target_idx = start + window + horizon - 1
             X_list.append(arr[start: start + window])
-            y_list.append(arr[start + window + horizon - 1, 0])  # 'return' is column 0
+            y_list.append(arr[target_idx, 0])  # 'return' is column 0
             id_list.append(stock_idx)
+            if return_dates:
+                date_list.append(df.index[target_idx])
 
     if not X_list:
         raise ValueError("No sequences built — check that stocks have enough history for the given window.")
@@ -179,6 +182,9 @@ def build_pooled_dataset(stock_data: dict[str, pd.DataFrame], stock_to_idx: dict
     X = np.stack(X_list)
     stock_ids = np.array(id_list, dtype=np.int32)
     y = np.array(y_list, dtype=np.float32)
+
+    if return_dates:
+        return X, stock_ids, y, np.array(date_list)
     return X, stock_ids, y
 
 

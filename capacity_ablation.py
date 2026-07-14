@@ -16,6 +16,8 @@ tuning artifact of the baseline architecture used in main.py.
 
 from __future__ import annotations
 
+import json
+
 import numpy as np
 import tensorflow as tf
 
@@ -115,6 +117,13 @@ def main():
     print(header)
     for r in results:
         print(f"{r['name']:<36}{r['params']:>10}{r['best_epoch']:>12}{r['stopped_epoch']:>10}{r['best_val_loss']:>15.4f}")
+
+    # Persist results in the repo (not just console output) so they survive
+    # beyond this process and can be reused later, e.g. by generate_report_plots.py,
+    # without needing to re-run this ~20-minute experiment.
+    with open("capacity_ablation_results.json", "w") as f:
+        json.dump(results, f, indent=2)
+    print("\nSaved results to capacity_ablation_results.json")
 
 
 if __name__ == "__main__":
