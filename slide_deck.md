@@ -81,6 +81,8 @@ architecture to training is a natural pivot point.
 
 **Image:** `results_table.png`
 
+**Callout box:** Every method here — doing nothing, a naive persistence rule, and a full LSTM — converges to the same ~50% band. That convergence is the honest result: a model that clearly beat these baselines would be the red flag, not this.
+
 **Speaker (2) — this is the key talking point of the whole presentation, give it room, say it explicitly:**
 *"Look at how close all four rows are to each other. It's not that our model failed while simpler methods succeeded — it's that every approach we tried, from doing nothing, to a naive 'tomorrow repeats today' rule, to a full LSTM with learned stock embeddings, converges to the same narrow band around 50%. That convergence is the real finding: it tells us there's very little reliable signal in this feature set to find in the first place, not that our model or methodology is flawed. If we'd instead seen our model clearly beat all three baselines on daily stock direction, that would be the more suspicious result — reliably predicting daily stock direction from price data alone essentially doesn't happen legitimately, so a result that clean would point to a data leak, not a working model. What we're seeing here is the honest, expected outcome for one of the hardest prediction problems in finance."*
 
