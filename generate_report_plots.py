@@ -71,9 +71,9 @@ def plot_training_curves():
     plt.legend()
     plt.grid(alpha=0.3)
     plt.tight_layout()
-    plt.savefig("training_curves.png", dpi=150)
+    plt.savefig("images/training_curves.png", dpi=150)
     plt.close()
-    print("Saved training_curves.png")
+    print("Saved images/training_curves.png")
 
 
 # ---------------------------------------------------------------------------
@@ -127,9 +127,9 @@ def plot_prediction_vs_actual(model, X_val, id_val, y_val) -> np.ndarray:
     plt.title("Prediction vs. Actual (Validation Set)")
     plt.legend()
     plt.tight_layout()
-    plt.savefig("prediction_vs_actual.png", dpi=150)
+    plt.savefig("images/prediction_vs_actual.png", dpi=150)
     plt.close()
-    print("Saved prediction_vs_actual.png")
+    print("Saved images/prediction_vs_actual.png")
     return preds
 
 
@@ -156,9 +156,9 @@ def plot_large_errors(preds, y_val, id_val, dates_val, idx_to_stock: dict[int, s
     table.scale(1, 1.5)
     plt.title(f"Top {top_n} Largest Prediction Errors (Validation Set)", pad=20)
     plt.tight_layout()
-    plt.savefig("large_errors.png", dpi=150)
+    plt.savefig("images/large_errors.png", dpi=150)
     plt.close()
-    print("Saved large_errors.png")
+    print("Saved images/large_errors.png")
 
 
 def plot_results_table(preds, X_train, y_train, X_val, y_val):
@@ -199,9 +199,9 @@ def plot_results_table(preds, X_train, y_train, X_val, y_val):
     table.scale(1, 1.8)
     plt.title("Model vs. Baselines (Validation Set)", pad=20)
     plt.tight_layout()
-    plt.savefig("results_table.png", dpi=150)
+    plt.savefig("images/results_table.png", dpi=150)
     plt.close()
-    print("Saved results_table.png")
+    print("Saved images/results_table.png")
 
 
 def plot_trading_backtest(preds, y_val, id_val, dates_val, scaler, top_k: int = 10):
@@ -259,9 +259,9 @@ def plot_trading_backtest(preds, y_val, id_val, dates_val, scaler, top_k: int = 
     table.scale(1, 2.8)
     plt.title(f"Long/Short Backtest vs. Published Benchmark\n(top/bottom {top_k} stocks daily, {len(daily_returns)} trading days)", pad=20)
     plt.tight_layout()
-    plt.savefig("fk_comparison.png", dpi=150)
+    plt.savefig("images/fk_comparison.png", dpi=150)
     plt.close()
-    print(f"Saved fk_comparison.png (avg daily return: {avg_daily_return_pct:+.2f}%, Sharpe: {sharpe:.2f})")
+    print(f"Saved images/fk_comparison.png (avg daily return: {avg_daily_return_pct:+.2f}%, Sharpe: {sharpe:.2f})")
     return avg_daily_return_pct, sharpe
 
 
@@ -300,9 +300,9 @@ def plot_system_diagram():
 
     plt.title("From Data to Product: Deployment Flow", pad=15)
     plt.tight_layout()
-    plt.savefig("system_diagram.png", dpi=150)
+    plt.savefig("images/system_diagram.png", dpi=150)
     plt.close()
-    print("Saved system_diagram.png")
+    print("Saved images/system_diagram.png")
 
 
 # ---------------------------------------------------------------------------
@@ -346,9 +346,9 @@ def plot_capacity_ablation():
     plt.ylabel("Best validation loss (Huber)")
     plt.title("Model Size vs. Validation Loss\n(25x parameter range, nearly identical results)")
     plt.tight_layout()
-    plt.savefig("capacity_ablation.png", dpi=150)
+    plt.savefig("images/capacity_ablation.png", dpi=150)
     plt.close()
-    print("Saved capacity_ablation.png")
+    print("Saved images/capacity_ablation.png")
 
 
 def main():
@@ -380,8 +380,8 @@ def main():
     plot_capacity_ablation()
 
     print(
-        "\nDone. Generated: training_curves.png, prediction_vs_actual.png, large_errors.png, "
-        "results_table.png, fk_comparison.png, system_diagram.png, capacity_ablation.png"
+        "\nDone. Generated: images/training_curves.png, images/prediction_vs_actual.png, images/large_errors.png, "
+        "images/results_table.png, images/fk_comparison.png, images/system_diagram.png, images/capacity_ablation.png"
     )
 
 

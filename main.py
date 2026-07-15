@@ -273,7 +273,7 @@ def main():
     )
     model.summary()
     tf.keras.utils.plot_model(
-        model, to_file="model_architecture.png", show_shapes=True, show_layer_names=True
+        model, to_file="images/model_architecture.png", show_shapes=True, show_layer_names=True
     )
 
     early_stop = tf.keras.callbacks.EarlyStopping(monitor="val_loss", patience=4, restore_best_weights=True)
