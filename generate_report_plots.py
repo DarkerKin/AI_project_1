@@ -204,6 +204,67 @@ def plot_results_table(preds, X_train, y_train, X_val, y_val):
     print("Saved results_table.png")
 
 
+def plot_trading_backtest(preds, y_val, id_val, dates_val, scaler, top_k: int = 10):
+    """Long/short backtest matching the methodology Fischer & Krauss (2018) used:
+    each day, rank stocks by predicted return, go long the top `top_k` and short
+    the bottom `top_k` (equal-weighted), and measure the REALIZED portfolio
+    return using actual outcomes — not the scaled MSE/directional-accuracy
+    metrics used elsewhere. This produces a number directly comparable to
+    their published 0.46% avg daily return / 5.8 Sharpe ratio.
+
+    StandardScaler's inverse transform is per-column independent, so we only
+    need the 'return' column's (column 0) mean/scale — no need to reconstruct
+    the full 5-column feature vector just to undo the scaling on one column.
+    """
+    return_mean = scaler.mean_[0]
+    return_scale = scaler.scale_[0]
+    actual_returns = y_val * return_scale + return_mean
+    predicted_returns = preds * return_scale + return_mean
+
+    df = pd.DataFrame({
+        "date": pd.to_datetime(dates_val),
+        "stock_id": id_val,
+        "predicted": predicted_returns,
+        "actual": actual_returns,
+    })
+
+    daily_portfolio_returns = []
+    for _, group in df.groupby("date"):
+        if len(group) < 2 * top_k:
+            continue
+        ranked = group.sort_values("predicted", ascending=False)
+        long_leg = ranked.head(top_k)["actual"].mean()
+        short_leg = ranked.tail(top_k)["actual"].mean()
+        daily_portfolio_returns.append(long_leg - short_leg)
+
+    daily_returns = np.array(daily_portfolio_returns)
+    avg_daily_return_pct = float(daily_returns.mean() * 100)
+    sharpe = float(daily_returns.mean() / daily_returns.std() * np.sqrt(252))
+
+    rows = [
+        ["Our Pooled LSTM (this project)", f"{avg_daily_return_pct:+.2f}%", f"{sharpe:.2f}"],
+        ["Fischer & Krauss (2018), EJOR", "+0.46%", "5.8"],
+    ]
+
+    fig, ax = plt.subplots(figsize=(8, 2.8))
+    ax.axis("off")
+    table = ax.table(
+        cellText=rows,
+        colLabels=["Model", "Avg. Daily Return\n(long-short, before costs)", "Sharpe Ratio"],
+        loc="center",
+        cellLoc="center",
+    )
+    table.auto_set_font_size(False)
+    table.set_fontsize(10)
+    table.scale(1, 2.8)
+    plt.title(f"Long/Short Backtest vs. Published Benchmark\n(top/bottom {top_k} stocks daily, {len(daily_returns)} trading days)", pad=20)
+    plt.tight_layout()
+    plt.savefig("fk_comparison.png", dpi=150)
+    plt.close()
+    print(f"Saved fk_comparison.png (avg daily return: {avg_daily_return_pct:+.2f}%, Sharpe: {sharpe:.2f})")
+    return avg_daily_return_pct, sharpe
+
+
 # ---------------------------------------------------------------------------
 # 4. System diagram — static deployment flow, no model inference involved
 # ---------------------------------------------------------------------------
@@ -306,18 +367,21 @@ def main():
     preds = plot_prediction_vs_actual(model, X_val, id_val, y_val)
     plot_large_errors(preds, y_val, id_val, dates_val, idx_to_stock)
 
-    print("\n[4/6] Results table (model vs. baselines)...")
+    print("\n[4/7] Results table (model vs. baselines)...")
     plot_results_table(preds, X_train, y_train, X_val, y_val)
 
-    print("\n[5/6] System diagram...")
+    print("\n[5/7] Long/short backtest vs. Fischer & Krauss (2018)...")
+    plot_trading_backtest(preds, y_val, id_val, dates_val, scaler)
+
+    print("\n[6/7] System diagram...")
     plot_system_diagram()
 
-    print("\n[6/6] Capacity ablation bar chart...")
+    print("\n[7/7] Capacity ablation bar chart...")
     plot_capacity_ablation()
 
     print(
         "\nDone. Generated: training_curves.png, prediction_vs_actual.png, large_errors.png, "
-        "results_table.png, system_diagram.png, capacity_ablation.png"
+        "results_table.png, fk_comparison.png, system_diagram.png, capacity_ablation.png"
     )
 
 

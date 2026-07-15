@@ -94,18 +94,18 @@ can take Slide 11 (questions/demo). The back-and-forth keeps energy up over
 
 ## Slide 7 — How This Compares to Published Research
 **Text:**
-- Fischer & Krauss (2018, *European Journal of Operational Research*) — LSTM on S&P 500 constituents, 1992–2015: just **0.46% average daily returns**, Sharpe ratio 5.8, *before* transaction costs. Even a well-regarded published result found a small edge.
-- Systematic survey of deep learning stock prediction research (*Artificial Intelligence Review*): of 10,000+ papers reviewed, **only 35 performed proper backtesting** — most use ordinary train-test splits instead of the walk-forward validation financial time series requires.
-- The survey's own conclusion: published accuracy claims in this field **"often overstate practical utility"** without rigorous backtesting and financial validation.
+- Ran the same kind of backtest Fischer & Krauss (2018, *European Journal of Operational Research*) used on our own model: rank all stocks daily by predicted return, go long the top 10, short the bottom 10, measure the realized portfolio return
+- Our model: **+0.03% avg. daily return, Sharpe 0.31** — their published LSTM on S&P 500 stocks (1992–2015): **+0.46%, Sharpe 5.8** (before transaction costs)
+- Separately, a systematic survey of deep learning stock prediction research (*Artificial Intelligence Review*) found that of 10,000+ papers reviewed, **only 35 performed proper backtesting** — the survey's own conclusion is that published accuracy claims in this field **"often overstate practical utility"**
 
-**Image:** None (citation-driven slide — keep it text-focused; optionally a simple 3-line "sources" footer)
+**Image:** `fk_comparison.png`
 
 **Sources (for reference / if asked):**
 - Fischer, T. & Krauss, C. (2018). Deep learning with long short-term memory networks for financial market predictions. *European Journal of Operational Research*, 270(2), 654-669.
 - "Deep learning in the stock market—a systematic survey of practice, backtesting, and applications." *Artificial Intelligence Review* (Springer). https://pmc.ncbi.nlm.nih.gov/articles/PMC9245389/
 
 **Speaker (2) — this directly answers "how does this compare to real-world models," addresses it head-on:**
-*"We looked at how our result compares to published research. A well-known 2018 study applying LSTMs to S&P 500 stocks found only a 0.46% average daily edge — small, even in one of the field's more well-regarded results. More tellingly, a systematic survey of this entire research area found that out of over 10,000 papers, only 35 actually did proper backtesting — most use ordinary train-test splits instead of the time-aware validation financial data requires, and the survey's own conclusion is that published accuracy claims in this field often overstate practical utility. Our methodology — chronological splitting, train-only scaling, multiple honest baseline comparisons — is exactly the rigor this survey identifies as rare. So our modest, honest result isn't a weakness compared to the field. If anything, it's evidence we did the methodology right instead of skipping the steps that usually inflate these numbers."*
+*"We wanted a real comparison, not just a citation, so we ran the same kind of backtest a well-known 2018 study used: each day, rank stocks by predicted return, go long the top 10, short the bottom 10, and measure what actually happened. Our model's edge came out to +0.03% average daily return with a Sharpe ratio of 0.31 — their published result was +0.46% and a Sharpe of 5.8. So our edge is smaller, which is worth being upfront about. But it's the same direction of finding — even their well-regarded published result only found a modest edge, on the same kind of large-cap US stocks we used. And separately, a systematic survey of this entire research area found that out of over 10,000 papers, only 35 actually did proper backtesting, concluding that published accuracy claims in this field often overstate practical utility. Our methodology — chronological splitting, train-only scaling, honest baseline comparisons — is exactly the rigor that survey identifies as rare."*
 
 ---
 
