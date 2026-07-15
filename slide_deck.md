@@ -75,13 +75,14 @@ architecture to training is a natural pivot point.
 
 ## Slide 6 — Results
 **Text:**
-- Benchmarked against 3 baselines — predict-zero, persistence, gradient-boosted trees (see table)
-- Across all four approaches, directional accuracy is statistically indistinguishable from a coin flip
+- Benchmarked against 3 baselines — predict-zero, persistence, gradient-boosted trees
+- LSTM's error (MSE 1.0770) is barely better than guessing no change at all (1.0835) — about a 0.6% improvement
+- Directional accuracy (50.12%) is statistically indistinguishable from persistence (49.09%), GBM (50.66%), and a coin flip
 
-**Images:** `prediction_vs_actual.png` (primary — the visual story) + `results_table.png` (exact numbers, second image on this slide)
+**Image:** `results_table.png`
 
 **Speaker (2) — this is the key talking point of the whole presentation, give it room, say it explicitly:**
-*"Predictions cluster in a flat band near zero regardless of what actually happened — and that's the mathematically correct behavior when there's very little reliable signal to act on. If we'd instead seen these dots hug the diagonal 'perfect prediction' line, that would be the red flag, not this — reliably predicting daily stock direction from price data alone essentially doesn't happen legitimately. A result that clean would point to a data leak, not a working model. What we're seeing here is the honest, expected outcome for one of the hardest prediction problems in finance."*
+*"Look at how close all four rows are to each other. It's not that our model failed while simpler methods succeeded — it's that every approach we tried, from doing nothing, to a naive 'tomorrow repeats today' rule, to a full LSTM with learned stock embeddings, converges to the same narrow band around 50%. That convergence is the real finding: it tells us there's very little reliable signal in this feature set to find in the first place, not that our model or methodology is flawed. If we'd instead seen our model clearly beat all three baselines on daily stock direction, that would be the more suspicious result — reliably predicting daily stock direction from price data alone essentially doesn't happen legitimately, so a result that clean would point to a data leak, not a working model. What we're seeing here is the honest, expected outcome for one of the hardest prediction problems in finance."*
 
 ---
 
