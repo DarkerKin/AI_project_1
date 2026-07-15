@@ -1,13 +1,17 @@
 # Pooled LSTM for Multi-Stock Return Forecasting — Slide Deck Outline
 
-Source document for Gamma (or manual slide building). 10 slides max (Gamma free tier).
+Source document for Gamma (or manual slide building). 11 slides (exceeds the
+Gamma free-tier cap of 10 — plan to build/export on a paid tier or manually).
 Each slide lists: the text/bullets to generate, which real PNG to manually place
 (do not let Gamma generate an AI image for these — insert the actual file), and
 speaker notes for the live talk (5-7 minutes total, 2 presenters).
 
-**Suggested split:** Presenter 1 covers Slides 1-5 (setup → architecture),
-Presenter 2 covers Slides 6-10 (training → results → close). The handoff from
-architecture to training is a natural pivot point.
+**Suggested split:** Presenter 1 covers Slides 1-4 (setup → architecture),
+Presenter 2 covers Slides 5-7 (training → results → published-research
+comparison), Presenter 1 covers Slides 8-9 (error analysis → improvement
+attempt), Presenter 2 closes with Slide 10 (limitations), and either presenter
+can take Slide 11 (questions/demo). The back-and-forth keeps energy up over
+11 slides rather than one long unbroken block per person.
 
 ---
 
@@ -88,7 +92,24 @@ architecture to training is a natural pivot point.
 
 ---
 
-## Slide 7 — Error Analysis
+## Slide 7 — How This Compares to Published Research
+**Text:**
+- Fischer & Krauss (2018, *European Journal of Operational Research*) — LSTM on S&P 500 constituents, 1992–2015: just **0.46% average daily returns**, Sharpe ratio 5.8, *before* transaction costs. Even a well-regarded published result found a small edge.
+- Systematic survey of deep learning stock prediction research (*Artificial Intelligence Review*): of 10,000+ papers reviewed, **only 35 performed proper backtesting** — most use ordinary train-test splits instead of the walk-forward validation financial time series requires.
+- The survey's own conclusion: published accuracy claims in this field **"often overstate practical utility"** without rigorous backtesting and financial validation.
+
+**Image:** None (citation-driven slide — keep it text-focused; optionally a simple 3-line "sources" footer)
+
+**Sources (for reference / if asked):**
+- Fischer, T. & Krauss, C. (2018). Deep learning with long short-term memory networks for financial market predictions. *European Journal of Operational Research*, 270(2), 654-669.
+- "Deep learning in the stock market—a systematic survey of practice, backtesting, and applications." *Artificial Intelligence Review* (Springer). https://pmc.ncbi.nlm.nih.gov/articles/PMC9245389/
+
+**Speaker (2) — this directly answers "how does this compare to real-world models," addresses it head-on:**
+*"We looked at how our result compares to published research. A well-known 2018 study applying LSTMs to S&P 500 stocks found only a 0.46% average daily edge — small, even in one of the field's more well-regarded results. More tellingly, a systematic survey of this entire research area found that out of over 10,000 papers, only 35 actually did proper backtesting — most use ordinary train-test splits instead of the time-aware validation financial data requires, and the survey's own conclusion is that published accuracy claims in this field often overstate practical utility. Our methodology — chronological splitting, train-only scaling, multiple honest baseline comparisons — is exactly the rigor this survey identifies as rare. So our modest, honest result isn't a weakness compared to the field. If anything, it's evidence we did the methodology right instead of skipping the steps that usually inflate these numbers."*
+
+---
+
+## Slide 8 — Error Analysis
 **Text:**
 - Table: the 15 largest prediction misses on the validation set (ticker, date, predicted vs. actual)
 - Worst misses cluster around large real-world moves the model had no way to anticipate (e.g., earnings surprises)
@@ -96,11 +117,11 @@ architecture to training is a natural pivot point.
 
 **Image:** `large_errors.png`
 
-**Speaker (2):** Pick 1-2 rows to narrate live, e.g. "ORCL on 2025-09-10 — model predicted almost no change, actual return was enormous, almost certainly a specific news event the model has no visibility into."
+**Speaker (1):** Pick 1-2 rows to narrate live, e.g. "ORCL on 2025-09-10 — model predicted almost no change, actual return was enormous, almost certainly a specific news event the model has no visibility into."
 
 ---
 
-## Slide 8 — Improvement Attempt: Capacity Ablation
+## Slide 9 — Improvement Attempt: Capacity Ablation
 **Text:**
 - Question tested: is the performance ceiling caused by this specific model being too big, too small, or badly tuned?
 - Trained 4 model sizes spanning a **25x parameter range** (3,017 to 75,521 params) on identical data
@@ -108,11 +129,11 @@ architecture to training is a natural pivot point.
 
 **Image:** `capacity_ablation.png`
 
-**Speaker (2):** *"This confirms the ceiling belongs to the data's limited signal content, not our architecture. A 25x larger model should have clearly outperformed a 25x smaller one if capacity were the bottleneck — it didn't."* This is your strongest evidence-backed moment — say it plainly, don't hedge.
+**Speaker (1):** *"This confirms the ceiling belongs to the data's limited signal content, not our architecture. A 25x larger model should have clearly outperformed a 25x smaller one if capacity were the bottleneck — it didn't."* This is your strongest evidence-backed moment — say it plainly, don't hedge.
 
 ---
 
-## Slide 9 — Limitations & Next Steps
+## Slide 10 — Limitations & Next Steps
 **Text:**
 - Limitations: only 5 features, no cross-stock correlation modeling, single global scaler, daily horizon is close to the noise floor
 - Proposed extensions: GNN + LSTM hybrid for cross-stock relationships, longer forecast horizons, richer feature set (order flow, fundamentals)
@@ -124,7 +145,7 @@ architecture to training is a natural pivot point.
 
 ---
 
-## Slide 10 — Questions / Live Demo
+## Slide 11 — Questions / Live Demo
 **Text:**
 - Thank you — happy to answer questions
 - [Switch to live browser demo of the Flask app here]
