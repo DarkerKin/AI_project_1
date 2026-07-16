@@ -104,36 +104,49 @@ def main():
     # variance/regime artifact of a different, smaller stock set.
     zero_mse = float(np.mean(y_val ** 2))
 
-    # --- Evaluation: UNSCALED metrics (real % returns) — this is the fair
-    # comparison, since StandardScaler re-normalizes to ~unit variance for
-    # whichever stocks are in THIS training set, making raw scaled-MSE
-    # comparisons across different universes potentially misleading. ---
+    # --- Evaluation: UNSCALED metrics (real % returns) — this is the fair,
+    # trustworthy comparison, since StandardScaler re-normalizes to ~unit
+    # variance for whichever stocks are in THIS training set, making raw
+    # scaled-MSE comparisons across different universes potentially
+    # misleading. Both the model's error AND a zero-predictor baseline are
+    # computed in this same real-percentage space, so neither side is
+    # distorted by rescaling — this is the number that actually answers
+    # "did fewer, more reliable stocks help." ---
     return_mean = scaler.mean_[0]
     return_scale = scaler.scale_[0]
     actual_pct = y_val * return_scale + return_mean
     pred_pct = preds * return_scale + return_mean
     unscaled_mse = float(np.mean((pred_pct - actual_pct) ** 2))
     unscaled_mae_pct = float(np.mean(np.abs(pred_pct - actual_pct)) * 100)
+    zero_unscaled_mse = float(np.mean(actual_pct ** 2))
+    zero_unscaled_mae_pct = float(np.mean(np.abs(actual_pct)) * 100)
 
     print("\n" + "=" * 60)
-    print("SMALL UNIVERSE (5 reliable stocks) — RESULTS")
+    print("TRUSTWORTHY METRICS (not distorted by per-run rescaling)")
+    print("=" * 60)
+    print(f"Directional accuracy:              {dir_acc:.2%}")
+    print(f"Model MAE (real % daily return):   {unscaled_mae_pct:.3f}%")
+    print(f"Zero-baseline MAE (real % return):  {zero_unscaled_mae_pct:.3f}%  <- is the model actually beating this?")
+    print(f"Model MSE (real % return, x1e-4):  {unscaled_mse * 1e4:.4f}")
+    print(f"Zero-baseline MSE (real %, x1e-4): {zero_unscaled_mse * 1e4:.4f}")
+
+    print("\n" + "=" * 60)
+    print("SCALED METRICS (use with caution — NOT comparable across")
+    print("different stock universes; see README/notes on why)")
     print("=" * 60)
     print(f"Tickers: {RELIABLE_TICKERS}")
     print(f"Train sequences: {X_train.shape[0]}, Val sequences: {X_val.shape[0]}")
     print(f"Best epoch: {best_epoch}, stopped at: {stopped_epoch}")
-    print(f"Scaled val MSE (model):       {scaled_mse:.4f}")
-    print(f"Scaled val MSE (zero baseline): {zero_mse:.4f}  <- is the model actually beating this?")
-    print(f"Directional accuracy:  {dir_acc:.2%}")
-    print(f"Unscaled val MSE (real % return space, x1e-4): {unscaled_mse * 1e4:.4f}")
-    print(f"Mean absolute error (real % daily return):      {unscaled_mae_pct:.3f}%")
+    print(f"Scaled val MSE (model):          {scaled_mse:.4f}")
+    print(f"Scaled val MSE (zero baseline):  {zero_mse:.4f}")
 
     print("\n" + "=" * 60)
     print("COMPARISON: 5-stock vs. 98-stock (full universe)")
     print("=" * 60)
     print(f"{'Metric':<28}{'5 reliable stocks':>20}{'98 stocks (full)':>20}")
-    print(f"{'Scaled val MSE':<28}{scaled_mse:>20.4f}{BASELINE_98_STOCK['scaled_mse']:>20.4f}")
     print(f"{'Directional accuracy':<28}{dir_acc:>19.2%}{BASELINE_98_STOCK['directional_accuracy']:>19.2%}")
     print(f"{'Best epoch':<28}{str(best_epoch):>20}{BASELINE_98_STOCK['best_epoch_range']:>20}")
+    print(f"{'Scaled val MSE (caution)':<28}{scaled_mse:>20.4f}{BASELINE_98_STOCK['scaled_mse']:>20.4f}")
 
 
 if __name__ == "__main__":
