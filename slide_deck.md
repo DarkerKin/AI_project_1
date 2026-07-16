@@ -31,7 +31,7 @@ can take Slide 11 (questions/demo). The back-and-forth keeps energy up over
 **Text:**
 - What: Predict next-day returns for ~100 large-cap US stocks using a single shared LSTM model instead of training one model per stock
 - Why it matters: Tests whether pooling data across many related time series improves generalization versus modeling each stock in isolation
-- Who would use this: Illustrates a realistic quant-research workflow — the same pattern (pooled sequence models, honest baseline comparison) applies to any multi-entity forecasting problem, not just stocks
+- Who would use this: Quant researchers and ML engineers building forecasting systems across many related time series at once — the same pooled-model pattern applies beyond stocks, e.g. demand forecasting across product lines, or traffic prediction across many sensors/locations
 
 **Image:** None
 
